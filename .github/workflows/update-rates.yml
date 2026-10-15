@@ -28,7 +28,10 @@ jobs:
           python-version: "3.12"
 
       - name: Installer les dépendances
-        run: pip install pandas lxml requests html5lib beautifulsoup4
+        run: pip install requests pandas beautifulsoup4 html5lib playwright
+        
+      - name: Installer Chromium
+        run: python -m playwright install --with-deps chromium
 
       - name: Récupérer les taux
         run: python fetch_rates.py
