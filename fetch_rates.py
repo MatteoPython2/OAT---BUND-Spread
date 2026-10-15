@@ -88,49 +88,38 @@ def recuperer_taux_10_ans(slug):
 
 
 def recuperer_historique_pays(page, slug):
-    """Récupère les variations en points de base sur la page historique."""
+    """Lit les variations affichées sur la page historique du pays."""
     url = f"{BASE}/bond-historical-data/{slug}/10-years/"
 
     page.goto(url, wait_until="domcontentloaded", timeout=60000)
-    page.locator("#title-yield-range").wait_for(
-        state="visible",
+
+    # Attendre que le contenu historique soit chargé
+    page.wait_for_function(
+        """() => {
+            const texte = document.body.innerText;
+            return texte.includes("1 Week") && texte.includes("Current Yield");
+        }""",
         timeout=60000,
     )
 
-    tableau_historique = None
-
-    for tableau in page.locator("table").all():
-        texte = " ".join(tableau.inner_text().split())
-
-        if all(libelle in texte for libelle in PERIODES.values()):
-            tableau_historique = tableau
-            break
-
-    if tableau_historique is None:
-        raise RuntimeError(f"Tableau historique introuvable pour {slug}")
-
+    texte = " ".join(page.locator("body").inner_text().split())
     variations = {}
 
-    for ligne in tableau_historique.locator("tr").all():
-        texte_ligne = " ".join(ligne.inner_text().split())
+    for cle, libelle in PERIODES.items():
+        correspondance = re.search(
+            rf"{re.escape(libelle)}\s+.*?([+-]?\d+(?:[.,]\d+)?)\s*bp",
+            texte,
+            re.IGNORECASE,
+        )
 
-        for cle, libelle in PERIODES.items():
-            if libelle not in texte_ligne:
-                continue
-
-            correspondance = re.search(
-                rf"{re.escape(libelle)}\s+([+-]?\d+(?:\.\d+)?)\s*bp",
-                texte_ligne,
-                re.IGNORECASE,
-            )
-
-            if correspondance:
-                variations[cle] = float(correspondance.group(1))
+        if correspondance:
+            valeur = correspondance.group(1).replace(",", ".")
+            variations[cle] = float(valeur)
 
     periodes_manquantes = set(PERIODES) - set(variations)
     if periodes_manquantes:
         raise RuntimeError(
-            f"Variations manquantes pour {slug} : "
+            f"Variations introuvables pour {slug} : "
             f"{', '.join(sorted(periodes_manquantes))}"
         )
 
