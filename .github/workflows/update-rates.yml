@@ -1,0 +1,40 @@
+name: Mise à jour des taux
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 17 * * 1-5"
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Préparer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installer les dépendances
+        run: pip install pandas lxml requests
+
+      - name: Récupérer les taux
+        run: python fetch_rates.py
+
+      - name: Enregistrer les données
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          if git diff --cached --quiet; then
+            echo "Aucune nouvelle donnée à enregistrer."
+          else
+            git commit -m "Mise à jour des taux"
+            git push
+          fi
