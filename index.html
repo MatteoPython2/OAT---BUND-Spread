@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Taux souverains — OAT & Bund</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 760px;
+      margin: 48px auto;
+      padding: 0 20px;
+      color: #172033;
+      background: #f4f6fa;
+    }
+    h1 { margin-bottom: 8px; }
+    .note { color: #5c667a; }
+    table {
+      width: 100%;
+      margin-top: 28px;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid #e8ebf1; }
+    th { background: #eaf0f8; }
+    .spread { font-weight: 700; }
+  </style>
+</head>
+<body>
+  <h1>Taux souverains à 10 ans</h1>
+  <p class="note">France, Allemagne, Espagne, Italie et Royaume-Uni</p>
+
+  <table>
+    <thead>
+      <tr><th>Pays</th><th>Obligation</th><th>Taux</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>France</td><td>OAT</td><td id="france">Chargement…</td></tr>
+      <tr><td>Allemagne</td><td>Bund</td><td id="allemagne">Chargement…</td></tr>
+      <tr><td>Espagne</td><td>Obligation d’État</td><td id="espagne">Chargement…</td></tr>
+      <tr><td>Italie</td><td>BTP</td><td id="italie">Chargement…</td></tr>
+      <tr><td>Royaume-Uni</td><td>Gilt</td><td id="royaume-uni">Chargement…</td></tr>
+    </tbody>
+  </table>
+
+  <p class="spread">Spread OAT–Bund : <span id="spread">En attente des données</span></p>
+  <p class="note" id="mise-a-jour"></p>
+
+  <script>
+    fetch("./data.json")
+      .then(response => {
+        if (!response.ok) throw new Error("Données indisponibles");
+        return response.json();
+      })
+      .then(data => {
+        for (const pays of ["france", "allemagne", "espagne", "italie", "royaume-uni"]) {
+          document.getElementById(pays).textContent =
+            `${Number(data[pays]).toFixed(3)} %`;
+        }
+
+        const spread = (Number(data.france) - Number(data.allemagne)) * 100;
+        document.getElementById("spread").textContent =
+          `${spread.toFixed(1)} points de base`;
+        document.getElementById("mise-a-jour").textContent =
+          `Données mises à jour : ${data.updated_at}`;
+      })
+      .catch(() => {
+        document.querySelectorAll("tbody td:last-child").forEach(cell => {
+          cell.textContent = "Données à connecter";
+        });
+        document.getElementById("spread").textContent =
+          "Données à connecter";
+      });
+  </script>
+</body>
+</html>
