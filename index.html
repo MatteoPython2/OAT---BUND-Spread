@@ -5,50 +5,155 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Taux souverains — OAT & Bund</title>
   <style>
-    body {
-      font-family: system-ui, sans-serif;
-      max-width: 760px;
-      margin: 48px auto;
-      padding: 0 20px;
-      color: #172033;
-      background: #f4f6fa;
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #65718a;
+      --line: #e4e9f1;
+      --page: #f4f6fa;
+      --blue: #173b70;
     }
-    h1 { margin-bottom: 8px; }
-    .note { color: #5c667a; }
+
+    * { box-sizing: border-box; }
+
+    body {
+      max-width: 900px;
+      margin: 52px auto;
+      padding: 0 22px;
+      color: var(--ink);
+      background: var(--page);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      margin: 10px 0 30px;
+      color: var(--muted);
+      font-size: 1.1rem;
+    }
+
+    .spread-card {
+      margin-bottom: 28px;
+      padding: 25px 30px;
+      color: white;
+      background: linear-gradient(120deg, #173b70, #245a9b);
+      border-radius: 18px;
+      box-shadow: 0 12px 28px #173b7026;
+    }
+
+    .spread-label {
+      margin: 0;
+      color: #d8e7ff;
+      font-size: 1rem;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .spread-value {
+      margin: 7px 0 0;
+      font-size: clamp(2.5rem, 8vw, 4.5rem);
+      line-height: 1.05;
+      font-weight: 800;
+      letter-spacing: -0.045em;
+    }
+
+    .spread-explanation {
+      margin: 9px 0 0;
+      color: #d8e7ff;
+      font-size: 0.98rem;
+    }
+
     table {
       width: 100%;
-      margin-top: 28px;
-      border-collapse: collapse;
-      background: white;
-      border-radius: 12px;
       overflow: hidden;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 5px 20px #1720330a;
     }
-    th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid #e8ebf1; }
-    th { background: #eaf0f8; }
-    .spread { font-weight: 700; }
+
+    th, td {
+      padding: 17px 22px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      font-size: 1.1rem;
+    }
+
+    th {
+      color: #33405a;
+      background: #eaf0f8;
+      font-size: 0.95rem;
+    }
+
+    tbody tr:last-child td { border-bottom: 0; }
+
+    td.rate {
+      text-align: right;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    th:last-child { text-align: right; }
+
+    .bond {
+      font-weight: 650;
+    }
+
+    .updated {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 560px) {
+      body { margin: 30px auto; }
+      .spread-card { padding: 21px; }
+      th, td { padding: 14px 13px; font-size: 1rem; }
+    }
   </style>
 </head>
 <body>
   <h1>Taux souverains à 10 ans</h1>
-  <p class="note">France, Allemagne, Espagne, Italie et Royaume-Uni</p>
+  <p class="subtitle">Les principaux rendements obligataires européens</p>
+
+  <section class="spread-card" aria-live="polite">
+    <p class="spread-label">Spread OAT – Bund</p>
+    <p class="spread-value" id="spread">Chargement…</p>
+    <p class="spread-explanation">Écart entre les taux français et allemand à 10 ans</p>
+  </section>
 
   <table>
     <thead>
-      <tr><th>Pays</th><th>Obligation</th><th>Taux</th></tr>
+      <tr>
+        <th>Obligation</th>
+        <th>Taux à 10 ans</th>
+      </tr>
     </thead>
     <tbody>
-      <tr><td>France</td><td>OAT</td><td id="france">Chargement…</td></tr>
-      <tr><td>Allemagne</td><td>Bund</td><td id="allemagne">Chargement…</td></tr>
-      <tr><td>Espagne</td><td>Obligation d’État</td><td id="espagne">Chargement…</td></tr>
-      <tr><td>Italie</td><td>BTP</td><td id="italie">Chargement…</td></tr>
-      <tr><td>Royaume-Uni</td><td>Gilt</td><td id="royaume-uni">Chargement…</td></tr>
+      <tr><td class="bond">🇫🇷 OAT</td><td class="rate" id="france">Chargement…</td></tr>
+      <tr><td class="bond">🇩🇪 Bund</td><td class="rate" id="allemagne">Chargement…</td></tr>
+      <tr><td class="bond">🇪🇸 Bono</td><td class="rate" id="espagne">Chargement…</td></tr>
+      <tr><td class="bond">🇮🇹 BTP</td><td class="rate" id="italie">Chargement…</td></tr>
+      <tr><td class="bond">🇬🇧 Gilt</td><td class="rate" id="royaume-uni">Chargement…</td></tr>
     </tbody>
   </table>
 
-  <p class="spread">Spread OAT–Bund : <span id="spread">En attente des données</span></p>
-  <p class="note" id="mise-a-jour"></p>
+  <p class="updated" id="mise-a-jour"></p>
 
   <script>
+    const formaterTaux = valeur =>
+      `${Number(valeur).toLocaleString("fr-FR", {
+        minimumFractionDigits: 3,
+        maximumFractionDigits: 3
+      })} %`;
+
     fetch("./data.json")
       .then(response => {
         if (!response.ok) throw new Error("Données indisponibles");
@@ -56,22 +161,35 @@
       })
       .then(data => {
         for (const pays of ["france", "allemagne", "espagne", "italie", "royaume-uni"]) {
+          const valeur = Number(data[pays]);
           document.getElementById(pays).textContent =
-            `${Number(data[pays]).toFixed(3)} %`;
+            Number.isFinite(valeur) ? formaterTaux(valeur) : "Indisponible";
         }
 
-        const spread = (Number(data.france) - Number(data.allemagne)) * 100;
-        document.getElementById("spread").textContent =
-          `${spread.toFixed(1)} points de base`;
+        const france = Number(data.france);
+        const allemagne = Number(data.allemagne);
+
+        if (Number.isFinite(france) && Number.isFinite(allemagne)) {
+          const spread = (france - allemagne) * 100;
+          document.getElementById("spread").textContent =
+            `${spread >= 0 ? "+" : ""}${spread.toLocaleString("fr-FR", {
+              minimumFractionDigits: 1,
+              maximumFractionDigits: 1
+            })} pb`;
+        } else {
+          document.getElementById("spread").textContent = "Indisponible";
+        }
+
         document.getElementById("mise-a-jour").textContent =
-          `Données mises à jour : ${data.updated_at}`;
+          data.updated_at ? `Données mises à jour : ${data.updated_at}` : "";
       })
       .catch(() => {
-        document.querySelectorAll("tbody td:last-child").forEach(cell => {
-          cell.textContent = "Données à connecter";
+        document.getElementById("spread").textContent = "Données indisponibles";
+        document.getElementById("mise-a-jour").textContent =
+          "Impossible de charger les données pour le moment.";
+        document.querySelectorAll("td.rate").forEach(cell => {
+          cell.textContent = "Indisponible";
         });
-        document.getElementById("spread").textContent =
-          "Données à connecter";
       });
   </script>
 </body>
