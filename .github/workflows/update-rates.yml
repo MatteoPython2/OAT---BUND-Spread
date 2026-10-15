@@ -28,7 +28,7 @@ jobs:
           python-version: "3.12"
 
       - name: Installer les dépendances
-        run: pip install requests pandas beautifulsoup4 html5lib playwright
+        run: pip install requests pandas lxlm beautifulsoup4 html5lib playwright
         
       - name: Installer Chromium
         run: python -m playwright install --with-deps chromium
