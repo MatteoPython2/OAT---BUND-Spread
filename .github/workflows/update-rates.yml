@@ -28,7 +28,7 @@ jobs:
           python-version: "3.12"
 
       - name: Installer les dépendances
-        run: pip install pandas lxml requests html5lib
+        run: pip install pandas lxml requests html5lib beautifulsoup4
 
       - name: Récupérer les taux
         run: python fetch_rates.py
