@@ -86,6 +86,52 @@ def recuperer_taux_10_ans(slug):
 
     raise RuntimeError(f"Taux à 10 ans introuvable pour {slug}")
 
+def recuperer_serie_historique(slug):
+    """Récupère les points datés du graphique historique à 10 ans."""
+    page_url = f"{BASE}/bond-historical-data/{slug}/10-years/"
+    page = session.get(page_url, timeout=30)
+    page.raise_for_status()
+
+    variables = re.search(
+        r"var\s+jsGlobalVars\s*=\s*(\{.*?\});",
+        page.text,
+        re.DOTALL,
+    )
+
+    if not variables:
+        raise RuntimeError(
+            f"Configuration du graphique introuvable pour {slug}"
+        )
+
+    global_vars = json.loads(variables.group(1))
+    endpoint = global_vars["ENDPOINT"]
+
+    resultat = session.post(
+        endpoint,
+        json={"GLOBALVAR": global_vars},
+        headers={"Origin": BASE},
+        timeout=60,
+    )
+    resultat.raise_for_status()
+
+    contenu = resultat.json().get("result", {})
+    quotes = contenu.get("quote", {})
+
+    lignes = quotes.values() if isinstance(quotes, dict) else quotes
+    serie = {}
+
+    for point in lignes:
+        date = point.get("DATA_VAL")
+        taux = point.get("CLOSE_VAL")
+
+        if date and taux is not None:
+            serie[date] = float(taux)
+
+    if not serie:
+        raise RuntimeError(f"Série historique vide pour {slug}")
+
+    return serie
+
 
 def recuperer_historique_pays(page, slug):
     """Lit les variations affichées sur la page historique du pays."""
@@ -158,6 +204,21 @@ donnees = {
 
 # Historique France/Allemagne et variation du spread
 donnees["history"] = recuperer_historique()
+serie_france = recuperer_serie_historique("france")
+serie_allemagne = recuperer_serie_historique("germany")
+
+dates_communes = sorted(
+    serie_france.keys() & serie_allemagne.keys()
+)
+
+donnees["chart_series"] = [
+    {
+        "date": date,
+        "france": serie_france[date],
+        "allemagne": serie_allemagne[date],
+    }
+    for date in dates_communes
+]
 
 donnees["updated_at"] = datetime.now(timezone.utc).strftime(
     "%Y-%m-%d %H:%M UTC"
