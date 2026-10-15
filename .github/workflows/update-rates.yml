@@ -1,4 +1,4 @@
-name: Mise à jour des taux
+name: Mise à jour et publication des taux
 
 on:
   workflow_dispatch:
@@ -6,10 +6,16 @@ on:
     - cron: "15 17 * * 1-5"
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  update:
+  update-and-publish:
     runs-on: ubuntu-latest
 
     steps:
@@ -27,14 +33,13 @@ jobs:
       - name: Récupérer les taux
         run: python fetch_rates.py
 
-      - name: Enregistrer les données
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data.json
-          if git diff --cached --quiet; then
-            echo "Aucune nouvelle donnée à enregistrer."
-          else
-            git commit -m "Mise à jour des taux"
-            git push
-          fi
+      - name: Configurer GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Préparer les fichiers du site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Publier le site
+        uses: actions/deploy-pages@v4
