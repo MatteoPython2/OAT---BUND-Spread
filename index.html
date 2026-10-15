@@ -129,6 +129,46 @@
       font-weight: 700;
     }
 
+    .chart-section {
+      margin-top: 38px;
+    }
+
+    .chart-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .chart-button {
+      padding: 9px 15px;
+      color: #33405a;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .chart-button.active {
+      color: white;
+      background: var(--blue);
+      border-color: var(--blue);
+    }
+
+    .chart-card {
+      padding: 18px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 5px 20px #1720330a;
+    }
+
+    .chart-message {
+      color: var(--muted);
+      text-align: center;
+    }
+
     .updated {
       margin-top: 18px;
       color: var(--muted);
@@ -219,7 +259,27 @@
     </div>
   </section>
 
+  <section class="chart-section">
+    <h2>Historique des taux et du spread</h2>
+
+    <div class="chart-controls" aria-label="Période du graphique">
+      <button class="chart-button" data-period="7">1 semaine</button>
+      <button class="chart-button" data-period="30">1 mois</button>
+      <button class="chart-button" data-period="183">6 mois</button>
+      <button class="chart-button active" data-period="365">1 an</button>
+      <button class="chart-button" data-period="1826">5 ans</button>
+      <button class="chart-button" data-period="all">Tout</button>
+    </div>
+
+    <div class="chart-card">
+      <p id="chart-message" class="chart-message">Chargement de la courbe…</p>
+      <canvas id="rates-chart" hidden></canvas>
+    </div>
+  </section>
+
   <p class="updated" id="mise-a-jour"></p>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script>
     const pays = [
@@ -236,6 +296,9 @@
       ["6_months", "6 mois"],
       ["1_year", "1 an"]
     ];
+
+    let graphiqueTaux = null;
+    let serieComplete = [];
 
     function formaterTaux(valeur) {
       return `${Number(valeur).toLocaleString("fr-FR", {
@@ -293,6 +356,124 @@
       }).join("");
     }
 
+    function afficherGraphique(nombreDeJours) {
+      const message = document.getElementById("chart-message");
+      const canvas = document.getElementById("rates-chart");
+
+      let donneesFiltrees = serieComplete;
+
+      if (nombreDeJours !== "all" && serieComplete.length > 0) {
+        const dernierJour = new Date(
+          serieComplete[serieComplete.length - 1].date
+        );
+        const dateLimite = new Date(dernierJour);
+        dateLimite.setDate(dateLimite.getDate() - Number(nombreDeJours));
+
+        donneesFiltrees = serieComplete.filter(point =>
+          new Date(point.date) >= dateLimite
+        );
+      }
+
+      if (donneesFiltrees.length === 0) {
+        canvas.hidden = true;
+        message.hidden = false;
+        message.textContent =
+          "Aucune donnée historique disponible pour cette période.";
+        return;
+      }
+
+      message.hidden = true;
+      canvas.hidden = false;
+
+      const etiquettes = donneesFiltrees.map(point => point.date);
+      const france = donneesFiltrees.map(point => Number(point.france));
+      const allemagne = donneesFiltrees.map(point => Number(point.allemagne));
+      const spread = donneesFiltrees.map(point =>
+        (Number(point.france) - Number(point.allemagne)) * 100
+      );
+
+      if (graphiqueTaux) {
+        graphiqueTaux.destroy();
+      }
+
+      graphiqueTaux = new Chart(canvas, {
+        type: "line",
+        data: {
+          labels: etiquettes,
+          datasets: [
+            {
+              label: "🇫🇷 OAT France (%)",
+              data: france,
+              borderColor: "#2563eb",
+              backgroundColor: "#2563eb",
+              borderWidth: 2,
+              pointRadius: 0,
+              tension: 0.2,
+              yAxisID: "y"
+            },
+            {
+              label: "🇩🇪 Bund Allemagne (%)",
+              data: allemagne,
+              borderColor: "#dc2626",
+              backgroundColor: "#dc2626",
+              borderWidth: 2,
+              pointRadius: 0,
+              tension: 0.2,
+              yAxisID: "y"
+            },
+            {
+              label: "Spread OAT–Bund (pb)",
+              data: spread,
+              borderColor: "#059669",
+              backgroundColor: "#059669",
+              borderWidth: 2,
+              pointRadius: 0,
+              tension: 0.2,
+              yAxisID: "ySpread"
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: {
+            mode: "index",
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              position: "bottom"
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                maxTicksLimit: 8
+              }
+            },
+            y: {
+              type: "linear",
+              position: "left",
+              title: {
+                display: true,
+                text: "Taux (%)"
+              }
+            },
+            ySpread: {
+              type: "linear",
+              position: "right",
+              title: {
+                display: true,
+                text: "Spread (points de base)"
+              },
+              grid: {
+                drawOnChartArea: false
+              }
+            }
+          }
+        }
+      });
+    }
+
     fetch("./data.json")
       .then(response => {
         if (!response.ok) {
@@ -326,6 +507,23 @@
 
         afficherHistorique(data.history);
 
+        serieComplete = Array.isArray(data.chart_series)
+          ? data.chart_series
+          : [];
+
+        document.querySelectorAll(".chart-button").forEach(bouton => {
+          bouton.addEventListener("click", () => {
+            document.querySelectorAll(".chart-button").forEach(element => {
+              element.classList.remove("active");
+            });
+
+            bouton.classList.add("active");
+            afficherGraphique(bouton.dataset.period);
+          });
+        });
+
+        afficherGraphique(365);
+
         document.getElementById("mise-a-jour").textContent =
           data.updated_at
             ? `Données mises à jour : ${data.updated_at}`
@@ -343,6 +541,9 @@
         });
 
         afficherHistorique(null);
+
+        document.getElementById("chart-message").textContent =
+          "Impossible de charger les données de la courbe.";
       });
   </script>
 </body>
